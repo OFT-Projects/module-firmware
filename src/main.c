@@ -18,7 +18,9 @@
 #include "mgos_mqtt.h"
 #include "mgos_adc.h"
 
-#include "pinout.h"
+#include "gpio_pinout.h"
+#include "multiplexer_pinout.h"
+
 #include "m_mqtt.h"
 #include "m_net.h"
 
@@ -30,20 +32,22 @@ enum mgos_app_init_result mgos_app_init(void) {
 
 	mgos_mqtt_add_global_handler(mqtt_connection_handler, NULL);
 
+	mgos_gpio_set_mode(D0, MGOS_GPIO_MODE_OUTPUT); // D0 (Back LED)
 	mgos_gpio_set_mode(D1, MGOS_GPIO_MODE_OUTPUT); // D1
 	mgos_gpio_set_mode(D2, MGOS_GPIO_MODE_OUTPUT); // D2
 	mgos_gpio_set_mode(D3, MGOS_GPIO_MODE_OUTPUT); // D3
-	mgos_gpio_set_mode(D4, MGOS_GPIO_MODE_OUTPUT); // D4 (Front LED)
-	mgos_gpio_set_mode(D5, MGOS_GPIO_MODE_OUTPUT); // D5
-	mgos_gpio_set_mode(D0, MGOS_GPIO_MODE_OUTPUT); // D0 (Back LED)
+	mgos_gpio_set_mode(SELECT1, MGOS_GPIO_MODE_OUTPUT);
+	mgos_gpio_set_mode(SELECT2, MGOS_GPIO_MODE_OUTPUT);
+	mgos_gpio_set_mode(SELECT3, MGOS_GPIO_MODE_OUTPUT);
 
+	mgos_gpio_write(D0, HIGH); // D0 (Back LED)
 	mgos_gpio_write(D1, HIGH); // D1
 	mgos_gpio_write(D2, HIGH); // D2
 	mgos_gpio_write(D3, HIGH); // D3
-	mgos_gpio_write(D4, HIGH); // D4 (Front LED)
-	mgos_gpio_write(D5, HIGH); // D5
-	mgos_gpio_write(D0, LOW); // D0 (Back LED)
-	
+	mgos_gpio_write(SELECT1, LOW); // D6
+	mgos_gpio_write(SELECT2, LOW); // D7
+	mgos_gpio_write(SELECT3, LOW); // D8
+
 	mgos_adc_enable(0);
 	
 	return MGOS_APP_INIT_SUCCESS;

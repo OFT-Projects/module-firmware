@@ -3,22 +3,30 @@
 #include "mgos_mqtt.h"
 #include "mgos_adc.h"
 
-#include "pinout.h"
+#include "gpio_pinout.h"
+#include "multiplexer_pinout.h"
+#include "multiplexer.h"
 
 void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic_len, const char *msg, int msg_len, void *ud) {
 	
 	// Change devices state
 	LOG(LL_INFO, ("Control message received: %s", msg));
 	
-	int current_fan_state = mgos_gpio_read(D1);
-	int current_pump_state = mgos_gpio_read(D2);
+	int current_fan_state = mgos_gpio_read(D0);
+	int current_pump_state = mgos_gpio_read(D1);
+	int current_led_state = mgos_gpio_read(D2);
+	int current_another_state = mgos_gpio_read(D3);
 	int fan_state = 0;
 	int pump_state = 0;
+	int led_state = 0;
+	int another_state = 0;
 
-	json_scanf(msg, strlen(msg), "{ fan_state:%d, pump_state:%d }", &fan_state, &pump_state);
+	json_scanf(msg, strlen(msg), "{ fan_state:%d, pump_state:%d, led_state:%d, another_state:%d }", &fan_state, &pump_state, &led_state, &another_state);
 	
-	if(current_fan_state != !fan_state) { mgos_gpio_write(D1, !fan_state); }
-	if(current_pump_state != !pump_state) { mgos_gpio_write(D2, !pump_state); }
+	if(current_fan_state != !fan_state) { mgos_gpio_write(D0, !fan_state); }
+	if(current_pump_state != !pump_state) { mgos_gpio_write(D1, !pump_state); }
+	if(current_led_state != !led_state) { mgos_gpio_write(D2, !led_state); }
+	if(current_another_state != !another_state) { mgos_gpio_write(D3, !another_state); }
 }
 
 void pub_ldr(void *arg) {
@@ -47,11 +55,15 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 
 			LOG(LL_INFO, ("%s", "MQTT: Connection established to broker"));
 			
+			mgos_gpio_write(D0, HIGH);
 			mgos_gpio_write(D1, HIGH);
 			mgos_gpio_write(D2, HIGH);
 			mgos_gpio_write(D3, HIGH);
-			mgos_gpio_write(D4, LOW);
-			mgos_gpio_write(D5, HIGH);
+			mgos_gpio_write(SELECT1, HIGH);
+			mgos_gpio_write(SELECT2, HIGH);
+			mgos_gpio_write(SELECT3, HIGH);
+
+			select_ldr();
 
 			// New connection publish
 			char *connected_msg = json_asprintf("{id:%Q, message:%Q}", mgos_sys_config_get_device_id(), "Connected.");
