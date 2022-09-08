@@ -29,16 +29,21 @@ void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic
 	if(current_another_state != !another_state) { mgos_gpio_write(D3, !another_state); }
 }
 
+char* fetch_topic(const char* device_id, const char* topic_str) {
+	char *topic = malloc((1 + strlen(device_id) + strlen(topic_str)) * sizeof(char));
+	strcpy(topic, "/");
+	strcat(topic, device_id);
+	strcat(topic, topic_str);	
+	return topic;
+}
+
 void pub_ldr(void *arg) {
 
 	// Publish LDR
-	char *ldr_msg = json_asprintf("{ldr:%d}", mgos_adc_read(0));
+	select_ldr();
 	
-	char *ldr_topic = NULL;
-	ldr_topic = malloc((1 + strlen(mgos_sys_config_get_device_id()) + strlen(mgos_sys_config_get_topics_ldr())) * sizeof(char));
-	strcpy(ldr_topic, "/");
-	strcat(ldr_topic, mgos_sys_config_get_device_id());
-	strcat(ldr_topic, mgos_sys_config_get_topics_ldr());
+	char *ldr_msg = json_asprintf("{ldr:%d}", mgos_adc_read(0));
+	char *ldr_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_ldr());	
 	
 	mgos_mqtt_pub(ldr_topic, ldr_msg, strlen(ldr_msg), 0, 0);
 	
@@ -47,6 +52,24 @@ void pub_ldr(void *arg) {
 	
 	LOG(LL_INFO, ("%s", "LDR message sent."));
 	(void) arg;
+}
+
+void pub_temperature(void *arg) {
+	
+	// Publish temperature
+	select_temperature();
+	
+	char *temperature_msg = json_asprintf("{temperature:%d}", mgos_adc_read(0));
+	char *temperature_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_temperature());
+	
+	mgos_mqtt_pub(temperature_topic, temperature_msg, strlen(temperature_msg), 0, 0);
+
+	free(temperature_msg);
+	free(temperature_topic);
+
+	LOG(LL_INFO, ("%s", "Temperature message sent."));
+	(void) arg;
+
 }
 
 void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *user_data) {
@@ -59,11 +82,9 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 			mgos_gpio_write(D1, HIGH);
 			mgos_gpio_write(D2, HIGH);
 			mgos_gpio_write(D3, HIGH);
-			mgos_gpio_write(SELECT1, HIGH);
-			mgos_gpio_write(SELECT2, HIGH);
-			mgos_gpio_write(SELECT3, HIGH);
-
-			select_ldr();
+			mgos_gpio_write(SELECT1, LOW);
+			mgos_gpio_write(SELECT2, LOW);
+			mgos_gpio_write(SELECT3, LOW);
 
 			// New connection publish
 			char *connected_msg = json_asprintf("{id:%Q, message:%Q}", mgos_sys_config_get_device_id(), "Connected.");
@@ -82,6 +103,7 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 			
 			// Timers for publishing
 			mgos_set_timer(mgos_sys_config_get_topics_publish_interval_ms_ldr(), MGOS_TIMER_REPEAT, pub_ldr, NULL);
+			mgos_set_timer(mgos_sys_config_get_topics_publish_interval_ms_temperature(), MGOS_TIMER_REPEAT, pub_temperature, NULL);
 		}
 		case MG_EV_MQTT_SUBACK: { LOG(LL_INFO, ("%s", "MQTT: Subscribed to topic.")); break; }
 		case MG_EV_MQTT_PUBACK: { LOG(LL_INFO, ("%s", "MQTT: Message published.")); break; }
