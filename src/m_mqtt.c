@@ -2,6 +2,7 @@
 #include "m_mqtt.h"
 #include "mgos_mqtt.h"
 #include "mgos_adc.h"
+#include "mgos_pwm.h"
 
 #include "gpio_pinout.h"
 #include "multiplexer_pinout.h"
@@ -12,19 +13,27 @@ void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic
 	// Change devices state
 	LOG(LL_INFO, ("Control message received: %s", msg));
 	
-	int current_fan_state = mgos_gpio_read(D0);
-	int current_pump_state = mgos_gpio_read(D1);
 	int current_led_state = mgos_gpio_read(D2);
 	int current_another_state = mgos_gpio_read(D3);
-	int fan_state = 0;
-	int pump_state = 0;
+	float fan_intensity = 0;
+	float pump_intensity = 0;
 	int led_state = 0;
 	int another_state = 0;
 
-	json_scanf(msg, strlen(msg), "{ fan_state:%d, pump_state:%d, led_state:%d, another_state:%d }", &fan_state, &pump_state, &led_state, &another_state);
-	
-	if(current_fan_state != !fan_state) { mgos_gpio_write(D0, !fan_state); }
-	if(current_pump_state != !pump_state) { mgos_gpio_write(D1, !pump_state); }
+	json_scanf(msg, strlen(msg), "{ fan:%f, pump:%f, led_state:%d, another_state:%d }", &fan_intensity, &pump_intensity, &led_state, &another_state);
+
+	if(mgos_pwm_set(D0, PWM_FREQ, fan_intensity)) {
+		LOG(LL_INFO, ("PWM okay set to: %.1f", fan_intensity));
+	} else {
+		LOG(LL_INFO, ("PWM failed: %.1f", fan_intensity));
+	}
+
+	if(mgos_pwm_set(D1, PWM_FREQ, pump_intensity)) {
+		LOG(LL_INFO, ("PWM okay set to: %.1f", pump_intensity));
+	} else {
+		LOG(LL_INFO, ("PWM failed: %.1f", pump_intensity));
+	}
+
 	if(current_led_state != !led_state) { mgos_gpio_write(D2, !led_state); }
 	if(current_another_state != !another_state) { mgos_gpio_write(D3, !another_state); }
 }
@@ -82,6 +91,7 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 			mgos_gpio_write(D1, HIGH);
 			mgos_gpio_write(D2, HIGH);
 			mgos_gpio_write(D3, HIGH);
+			mgos_gpio_write(SELECT0, LOW);
 			mgos_gpio_write(SELECT1, LOW);
 			mgos_gpio_write(SELECT2, LOW);
 			mgos_gpio_write(SELECT3, LOW);
@@ -92,11 +102,7 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 			free(connected_msg);
 
 			// Subscribe to control topic
-			char *control_topic = malloc((1 + strlen(mgos_sys_config_get_device_id()) + strlen(mgos_sys_config_get_topics_control())) * sizeof(char));
-			strcpy(control_topic, "/");
-			strcat(control_topic, mgos_sys_config_get_device_id());
-			strcat(control_topic, mgos_sys_config_get_topics_control());
-			
+			char *control_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_control());	
 			mgos_mqtt_sub(control_topic, mqtt_control_handler, NULL);
 			
 			free(control_topic);
