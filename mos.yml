@@ -44,13 +44,13 @@ filesystem:
 #
 config_schema:
 #  - ["debug.level", 3]
-- ["device.id", "1"]
+- ["device.id", "modulo"]
 - ["rpc.auth_domain", "Module"]
 - ["rpc.auth_file", ""]
 - ["wifi.ap.enable", false]
 - ["wifi.sta.enable", true]
-- ["wifi.sta.ssid", "Arugula"]
-- ["wifi.sta.pass", "L3tTUc3"]
+- ["wifi.sta.ssid", ""]
+- ["wifi.sta.pass", ""]
 - ["mqtt.enable", true]
 - ["mqtt.server", ""]
 - ["mqtt.ssl_ca_cert", "ca.pem"]
@@ -65,7 +65,9 @@ config_schema:
 - ["topics.new_conn", "s", "/new_conn", {title: "Announcing successful connection."}]
 - ["topics.control", "s", "/control", {title: "Listen to control commands."}]
 - ["topics.ldr", "s", "/ldr", {title: "Publish LDR value."}]
+- ["topics.temperature", "s", "/temperature", {title: "Publish temperature value."}]
 - ["topics.publish.interval.ms.ldr", "d", 2500, {title: "Interval between LDR value publishing."}]
+- ["topics.publish.interval.ms.temperature", "d", 3000, {title: "Interval between temperature value publishing."}]
 
 libs:
   - origin: https://github.com/mongoose-os-libs/rpc-uart
@@ -77,6 +79,8 @@ libs:
   - origin: https://github.com/mongoose-os-libs/mqtt
   - origin: https://github.com/mongoose-os-libs/adc
   - origin: https://github.com/mongoose-os-libs/http-server
+  - origin: https://github.com/mongoose-os-libs/aws
+  - origin: https://github.com/mongoose-os-libs/pwm
  
 # Used by the mos tool to catch mos binaries incompatible with this file format
 manifest_version: 2017-09-29
