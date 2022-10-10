@@ -44,7 +44,7 @@ filesystem:
 #
 config_schema:
 #  - ["debug.level", 3]
-- ["device.id", "modulo"]
+- ["device.id", "module"]
 - ["rpc.auth_domain", "Module"]
 - ["rpc.auth_file", ""]
 - ["wifi.ap.enable", false]
@@ -66,8 +66,10 @@ config_schema:
 - ["topics.control", "s", "/control", {title: "Listen to control commands."}]
 - ["topics.ldr", "s", "/ldr", {title: "Publish LDR value."}]
 - ["topics.temperature", "s", "/temperature", {title: "Publish temperature value."}]
-- ["topics.publish.interval.ms.ldr", "d", 2500, {title: "Interval between LDR value publishing."}]
-- ["topics.publish.interval.ms.temperature", "d", 3000, {title: "Interval between temperature value publishing."}]
+- ["topics.rpm", "s", "/rpm", {title: "Publish fan rpm value."}]
+- ["topics.publish_interval_ms.ldr", "d", 2500, {title: "Interval between LDR value publishing."}]
+- ["topics.publish_interval_ms.temperature", "d", 3000, {title: "Interval between temperature value publishing."}]
+- ["topics.publish_interval_ms.rpm", "d", 1000, {title: "Interval between fan rpm value publishing."}]
 
 libs:
   - origin: https://github.com/mongoose-os-libs/rpc-uart

@@ -42,10 +42,10 @@ enum mgos_app_init_result mgos_app_init(void) {
 	mgos_gpio_set_mode(SELECT2, MGOS_GPIO_MODE_OUTPUT);
 	mgos_gpio_set_mode(SELECT3, MGOS_GPIO_MODE_OUTPUT);
 
-	mgos_pwm_set(D0, PWM_FREQ, 0);
-	mgos_pwm_set(D1, PWM_FREQ, 0);
-	mgos_gpio_write(D2, HIGH); // D2
-	mgos_gpio_write(D3, HIGH); // D3
+	mgos_gpio_write(D0, LOW);
+	mgos_gpio_write(D1, LOW);
+	mgos_gpio_write(D2, LOW); // D2
+	mgos_gpio_write(D3, LOW); // D3
 	mgos_gpio_write(SELECT0, LOW); // D8
 	mgos_gpio_write(SELECT1, LOW); // D7
 	mgos_gpio_write(SELECT2, LOW); // D6

@@ -13,29 +13,26 @@ void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic
 	// Change devices state
 	LOG(LL_INFO, ("Control message received: %s", msg));
 	
-	int current_led_state = mgos_gpio_read(D2);
-	int current_another_state = mgos_gpio_read(D3);
-	float fan_intensity = 0;
-	float pump_intensity = 0;
+	int current_pump_state = mgos_gpio_read(D3);
+	int current_led_state = mgos_gpio_read(D1);
+	int current_fan_state = mgos_gpio_read(D2);
+	
+	int pump_state = 0;
 	int led_state = 0;
-	int another_state = 0;
+	int fan_state = 0;
+	float fan_intensity = 0;
 
-	json_scanf(msg, strlen(msg), "{ fan:%f, pump:%f, led_state:%d, another_state:%d }", &fan_intensity, &pump_intensity, &led_state, &another_state);
+	json_scanf(msg, strlen(msg), "{ fan_intensity:%f pump:%d, led:%d, fan:%d }", &fan_intensity, &pump_state, &led_state, &fan_state);
 
-	if(mgos_pwm_set(D0, PWM_FREQ, fan_intensity)) {
+	if(current_pump_state != pump_state) { mgos_gpio_write(D3, pump_state); }	
+	if(current_led_state != led_state) { mgos_gpio_write(D1, led_state); }
+	if(current_fan_state != fan_state) { mgos_gpio_write(D2, fan_state); }
+	if(mgos_pwm_set(D5, PWM_FREQ, fan_intensity)) {
 		LOG(LL_INFO, ("PWM okay set to: %.1f", fan_intensity));
 	} else {
 		LOG(LL_INFO, ("PWM failed: %.1f", fan_intensity));
 	}
 
-	if(mgos_pwm_set(D1, PWM_FREQ, pump_intensity)) {
-		LOG(LL_INFO, ("PWM okay set to: %.1f", pump_intensity));
-	} else {
-		LOG(LL_INFO, ("PWM failed: %.1f", pump_intensity));
-	}
-
-	if(current_led_state != !led_state) { mgos_gpio_write(D2, !led_state); }
-	if(current_another_state != !another_state) { mgos_gpio_write(D3, !another_state); }
 }
 
 char* fetch_topic(const char* device_id, const char* topic_str) {
@@ -51,7 +48,8 @@ void pub_ldr(void *arg) {
 	// Publish LDR
 	select_ldr();
 	
-	char *ldr_msg = json_asprintf("{ldr:%d}", mgos_adc_read(0));
+	short int ldr = mgos_adc_read(0);
+	char *ldr_msg = json_asprintf("{ldr:%hd}", ldr);
 	char *ldr_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_ldr());	
 	
 	mgos_mqtt_pub(ldr_topic, ldr_msg, strlen(ldr_msg), 0, 0);
@@ -68,7 +66,8 @@ void pub_temperature(void *arg) {
 	// Publish temperature
 	select_temperature();
 	
-	char *temperature_msg = json_asprintf("{temperature:%d}", mgos_adc_read(0));
+	short int temperature = mgos_adc_read(0);
+	char *temperature_msg = json_asprintf("{temperature:%hd}", temperature);
 	char *temperature_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_temperature());
 	
 	mgos_mqtt_pub(temperature_topic, temperature_msg, strlen(temperature_msg), 0, 0);
@@ -76,9 +75,25 @@ void pub_temperature(void *arg) {
 	free(temperature_msg);
 	free(temperature_topic);
 
-	LOG(LL_INFO, ("%s", "Temperature message sent."));
+	LOG(LL_INFO, ("%s: %hd", "Temperature message sent.", temperature));
 	(void) arg;
 
+}
+
+void pub_rpm(void *arg) {
+
+	// TODO: Fix this shit
+	
+	// Publish rpm	
+	float fan_intensity = mgos_gpio_read(D5);
+	short int fan_rpm = fan_intensity * fan_rpm_operation_range + min_fan_rpm;
+		
+	char *rpm_msg = json_asprintf("{rpm:%hd}", fan_rpm);
+	char *rpm_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_rpm());
+	
+	mgos_mqtt_pub(rpm_topic, rpm_msg, strlen(rpm_msg), 0, 0);
+
+	(void) arg;
 }
 
 void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *user_data) {
@@ -86,30 +101,30 @@ void mqtt_connection_handler(struct mg_connection *c, int ev, void *p, void *use
 		case MG_EV_MQTT_CONNACK: {
 
 			LOG(LL_INFO, ("%s", "MQTT: Connection established to broker"));
-			
-			mgos_gpio_write(D0, HIGH);
-			mgos_gpio_write(D1, HIGH);
-			mgos_gpio_write(D2, HIGH);
-			mgos_gpio_write(D3, HIGH);
+
+			mgos_gpio_write(D0, LOW);
+			mgos_gpio_write(D1, LOW);
+			mgos_gpio_write(D2, LOW);
+			mgos_gpio_write(D3, LOW);
 			mgos_gpio_write(SELECT0, LOW);
 			mgos_gpio_write(SELECT1, LOW);
 			mgos_gpio_write(SELECT2, LOW);
 			mgos_gpio_write(SELECT3, LOW);
 
 			// New connection publish
-			char *connected_msg = json_asprintf("{id:%Q, message:%Q}", mgos_sys_config_get_device_id(), "Connected.");
+			char *connected_msg = json_asprintf("{id:%Q}", mgos_sys_config_get_device_id());
 			mgos_mqtt_pub(mgos_sys_config_get_topics_new_conn(), connected_msg, strlen(connected_msg), 0, 0);
 			free(connected_msg);
 
 			// Subscribe to control topic
 			char *control_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_control());	
-			mgos_mqtt_sub(control_topic, mqtt_control_handler, NULL);
-			
+			mgos_mqtt_sub(control_topic, mqtt_control_handler, NULL);	
 			free(control_topic);
 			
 			// Timers for publishing
 			mgos_set_timer(mgos_sys_config_get_topics_publish_interval_ms_ldr(), MGOS_TIMER_REPEAT, pub_ldr, NULL);
 			mgos_set_timer(mgos_sys_config_get_topics_publish_interval_ms_temperature(), MGOS_TIMER_REPEAT, pub_temperature, NULL);
+			mgos_set_timer(mgos_sys_config_get_topics_publish_interval_ms_rpm(), MGOS_TIMER_REPEAT, pub_rpm, NULL);
 		}
 		case MG_EV_MQTT_SUBACK: { LOG(LL_INFO, ("%s", "MQTT: Subscribed to topic.")); break; }
 		case MG_EV_MQTT_PUBACK: { LOG(LL_INFO, ("%s", "MQTT: Message published.")); break; }
