@@ -8,31 +8,51 @@
 #include "multiplexer_pinout.h"
 #include "multiplexer.h"
 
+#define led_pin D1
+#define fan_pin D2
+#define pump_pin D3
+#define fan_pwm_pin D5
+
+void walker(void *callback_data, const char *name, size_t name_len, const char *path, const struct json_token *token) {
+
+	char component[10] = {'\0'};
+	// char *component = malloc(10 * sizeof(char));
+	// strcpy(component, "");
+	if(token->type == JSON_TYPE_STRING) {	
+		strncpy(component, token->ptr, token->len);
+		LOG(LL_INFO, ("component: %s", component));
+	} else if(token->type == JSON_TYPE_NUMBER) {			
+		
+		char value_str[10] = {'\0'};
+		strncpy(value_str, token->ptr, token->len);
+		int value = atoi(value_str);
+	
+		LOG(LL_INFO, ("value: %d", value));
+	
+		// TODO: Fix comparation		
+		if(strcmp(component, "led") == 0) { 
+			LOG(LL_INFO, ("%s %d", "its a led! led goes", value)); 
+			mgos_gpio_write(led_pin, value);	
+		}
+		else if(strcmp(component, "pump") == 0) {
+			 LOG(LL_INFO, ("%s %d", "its a pump! pump goes", value)); 
+			mgos_gpio_write(pump_pin, value);	
+		}
+		else if(strcmp(component, "fan") == 0) { 
+			LOG(LL_INFO, ("%s %d", "its a fan! fan goes", value)); 
+			mgos_gpio_write(fan_pin, value);	
+		}
+		
+		component[0] = 0;
+	}	
+}
+
 void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic_len, const char *msg, int msg_len, void *ud) {
 	
 	// Change devices state
 	LOG(LL_INFO, ("Control message received: %s", msg));
-	
-	int current_pump_state = mgos_gpio_read(D3);
-	int current_led_state = mgos_gpio_read(D1);
-	int current_fan_state = mgos_gpio_read(D2);
-	
-	int pump_state = 0;
-	int led_state = 0;
-	int fan_state = 0;
-	float fan_intensity = 0;
-
-	json_scanf(msg, strlen(msg), "{ fan_intensity:%f pump:%d, led:%d, fan:%d }", &fan_intensity, &pump_state, &led_state, &fan_state);
-
-	if(current_pump_state != pump_state) { mgos_gpio_write(D3, pump_state); }	
-	if(current_led_state != led_state) { mgos_gpio_write(D1, led_state); }
-	if(current_fan_state != fan_state) { mgos_gpio_write(D2, fan_state); }
-	if(mgos_pwm_set(D5, PWM_FREQ, fan_intensity)) {
-		LOG(LL_INFO, ("PWM okay set to: %.1f", fan_intensity));
-	} else {
-		LOG(LL_INFO, ("PWM failed: %.1f", fan_intensity));
-	}
-
+		
+	json_walk(msg, strlen(msg), walker, NULL);
 }
 
 char* fetch_topic(const char* device_id, const char* topic_str) {
@@ -49,7 +69,9 @@ void pub_ldr(void *arg) {
 	select_ldr();
 	
 	short int ldr = mgos_adc_read(0);
-	char *ldr_msg = json_asprintf("{ldr:%hd}", ldr);
+	short int led_state = mgos_gpio_read(led_pin);
+
+	char *ldr_msg = json_asprintf("{target_sensors: [{sensor: \"%s\", value:%hd}], current_state: {components: [{component: \"%s\", value: %hd}]}}", "ldr", ldr, "led", led_state);
 	char *ldr_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_ldr());	
 	
 	mgos_mqtt_pub(ldr_topic, ldr_msg, strlen(ldr_msg), 0, 0);
@@ -67,7 +89,9 @@ void pub_temperature(void *arg) {
 	select_temperature();
 	
 	short int temperature = mgos_adc_read(0);
-	char *temperature_msg = json_asprintf("{temperature:%hd}", temperature);
+	short int fan_state = mgos_gpio_read(fan_pin);
+
+	char *temperature_msg = json_asprintf("{target_sensors: [{sensor: \"%s\", value:%hd}], current_state: {components: [{component: \"%s\", value: %hd}]}}", "temperature", temperature, "fan", fan_state);	
 	char *temperature_topic = fetch_topic(mgos_sys_config_get_device_id(), mgos_sys_config_get_topics_temperature());
 	
 	mgos_mqtt_pub(temperature_topic, temperature_msg, strlen(temperature_msg), 0, 0);
@@ -75,7 +99,7 @@ void pub_temperature(void *arg) {
 	free(temperature_msg);
 	free(temperature_topic);
 
-	LOG(LL_INFO, ("%s: %hd", "Temperature message sent.", temperature));
+	LOG(LL_INFO, ("%s", "Temperature message sent."));
 	(void) arg;
 
 }
@@ -85,7 +109,7 @@ void pub_rpm(void *arg) {
 	// TODO: Fix this shit
 	
 	// Publish rpm	
-	float fan_intensity = mgos_gpio_read(D5);
+	float fan_intensity = mgos_gpio_read(fan_pwm_pin);
 	short int fan_rpm = fan_intensity * fan_rpm_operation_range + min_fan_rpm;
 		
 	char *rpm_msg = json_asprintf("{rpm:%hd}", fan_rpm);
