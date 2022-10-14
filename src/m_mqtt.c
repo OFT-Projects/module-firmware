@@ -13,37 +13,51 @@
 #define pump_pin D3
 #define fan_pwm_pin D5
 
+int device_id = 0;
+
 void walker(void *callback_data, const char *name, size_t name_len, const char *path, const struct json_token *token) {
 
 	char component[10] = {'\0'};
-	// char *component = malloc(10 * sizeof(char));
-	// strcpy(component, "");
 	if(token->type == JSON_TYPE_STRING) {	
 		strncpy(component, token->ptr, token->len);
 		LOG(LL_INFO, ("component: %s", component));
+		if(strcmp(component, "led") == 0) { 
+			LOG(LL_INFO, ("%s", "its a led!"));
+			device_id = 0; 
+		}
+		else if(strcmp(component, "pump") == 0) {
+			LOG(LL_INFO, ("%s", "its a pump!")); 
+			device_id = 1;
+		}
+		else if(strcmp(component, "fan") == 0) { 
+			LOG(LL_INFO, ("%s", "its a fan!")); 
+			device_id = 2;
+		} else {
+			LOG(LL_INFO, ("%s", "dunno what it is"));
+			device_id = -1;
+		}
 	} else if(token->type == JSON_TYPE_NUMBER) {			
 		
+		LOG(LL_INFO, ("callback_data value: %d", device_id));
+	
 		char value_str[10] = {'\0'};
 		strncpy(value_str, token->ptr, token->len);
 		int value = atoi(value_str);
 	
 		LOG(LL_INFO, ("value: %d", value));
-	
-		// TODO: Fix comparation		
-		if(strcmp(component, "led") == 0) { 
-			LOG(LL_INFO, ("%s %d", "its a led! led goes", value)); 
-			mgos_gpio_write(led_pin, value);	
-		}
-		else if(strcmp(component, "pump") == 0) {
-			 LOG(LL_INFO, ("%s %d", "its a pump! pump goes", value)); 
-			mgos_gpio_write(pump_pin, value);	
-		}
-		else if(strcmp(component, "fan") == 0) { 
-			LOG(LL_INFO, ("%s %d", "its a fan! fan goes", value)); 
-			mgos_gpio_write(fan_pin, value);	
-		}
 		
-		component[0] = 0;
+		if(device_id == 0) { 
+			LOG(LL_INFO, ("%s: %d!", "the led goes", value)); 
+			mgos_gpio_write(led_pin, value);	
+		} else if(device_id == 1) {
+			LOG(LL_INFO, ("%s: %d!", "the pump goes", value)); 
+			mgos_gpio_write(pump_pin, value);	
+		} else if(device_id == 2) {
+			LOG(LL_INFO, ("%s: %d!", "the fan goes", value)); 
+			mgos_gpio_write(fan_pin, value);	
+		} else {
+			LOG(LL_INFO, ("%s", "dunno what goes what"));
+		}
 	}	
 }
 
@@ -51,7 +65,7 @@ void mqtt_control_handler(struct mg_connection *nc, const char *topic, int topic
 	
 	// Change devices state
 	LOG(LL_INFO, ("Control message received: %s", msg));
-		
+	
 	json_walk(msg, strlen(msg), walker, NULL);
 }
 
