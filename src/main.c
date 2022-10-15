@@ -20,7 +20,6 @@
 #include "mgos_pwm.h"
 
 #include "gpio_pinout.h"
-#include "multiplexer_pinout.h"
 
 #include "m_mqtt.h"
 #include "m_net.h"
@@ -42,10 +41,10 @@ enum mgos_app_init_result mgos_app_init(void) {
 	mgos_gpio_set_mode(SELECT2, MGOS_GPIO_MODE_OUTPUT);
 	mgos_gpio_set_mode(SELECT3, MGOS_GPIO_MODE_OUTPUT);
 
-	mgos_gpio_write(D0, LOW);
-	mgos_gpio_write(D1, LOW);
-	mgos_gpio_write(D2, LOW); // D2
-	mgos_gpio_write(D3, LOW); // D3
+	mgos_gpio_write(D0, HIGH);
+	mgos_gpio_write(led_pin, HIGH);
+	mgos_gpio_write(pump_pin, HIGH);
+	mgos_gpio_write(fan_pin, HIGH);
 	mgos_gpio_write(SELECT0, LOW); // D8
 	mgos_gpio_write(SELECT1, LOW); // D7
 	mgos_gpio_write(SELECT2, LOW); // D6
