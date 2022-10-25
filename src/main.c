@@ -33,13 +33,13 @@ enum mgos_app_init_result mgos_app_init(void) {
 	mgos_mqtt_add_global_handler(mqtt_connection_handler, NULL);
 
 	mgos_gpio_set_mode(D0, MGOS_GPIO_MODE_OUTPUT); // D0 (Back LED)
-	mgos_gpio_set_mode(D1, MGOS_GPIO_MODE_OUTPUT); // D1
-	mgos_gpio_set_mode(D2, MGOS_GPIO_MODE_OUTPUT); // D2
-	mgos_gpio_set_mode(D3, MGOS_GPIO_MODE_OUTPUT); // D3
+	mgos_gpio_set_mode(led_pin, MGOS_GPIO_MODE_OUTPUT); // D1
+	mgos_gpio_set_mode(pump_pin, MGOS_GPIO_MODE_OUTPUT); // D2
+	mgos_gpio_set_mode(fan_pin, MGOS_GPIO_MODE_OUTPUT); // D3
+	// mgos_gpio_set_mode(dht_pin, MGOS_GPIO_MODE_INPUT); // D4
 	mgos_gpio_set_mode(SELECT0, MGOS_GPIO_MODE_OUTPUT);
 	mgos_gpio_set_mode(SELECT1, MGOS_GPIO_MODE_OUTPUT);
 	mgos_gpio_set_mode(SELECT2, MGOS_GPIO_MODE_OUTPUT);
-	mgos_gpio_set_mode(SELECT3, MGOS_GPIO_MODE_OUTPUT);
 
 	mgos_gpio_write(D0, HIGH);
 	mgos_gpio_write(led_pin, HIGH);
@@ -48,7 +48,6 @@ enum mgos_app_init_result mgos_app_init(void) {
 	mgos_gpio_write(SELECT0, LOW); // D8
 	mgos_gpio_write(SELECT1, LOW); // D7
 	mgos_gpio_write(SELECT2, LOW); // D6
-	mgos_gpio_write(SELECT3, LOW); // D5
 
 	mgos_adc_enable(0);
 	

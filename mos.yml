@@ -44,10 +44,13 @@ filesystem:
 #
 config_schema:
 #  - ["debug.level", 3]
-- ["device.id", "module"]
+- ["device.id", "modulo_125"]
 - ["rpc.auth_domain", "Module"]
 - ["rpc.auth_file", ""]
 - ["wifi.ap.enable", false]
+- ["wifi.sta1.enable", true]
+- ["wifi.sta1.ssid", ""]
+- ["wifi.sta1.pass", ""]
 - ["wifi.sta.enable", true]
 - ["wifi.sta.ssid", ""]
 - ["wifi.sta.pass", ""]
@@ -63,12 +66,12 @@ config_schema:
 # MQTT Topics
 - ["topics", "o", {title: "Modules MQTT Topics configuration"}]
 - ["topics.new_conn", "s", "/new_conn", {title: "Announcing successful connection."}]
-- ["topics.control", "s", "/control", {title: "Listen to control commands."}]
-- ["topics.ldr", "s", "/ldr", {title: "Publish LDR value."}]
-- ["topics.temperature", "s", "/temperature", {title: "Publish temperature value."}]
-- ["topics.rpm", "s", "/rpm", {title: "Publish fan rpm value."}]
+- ["topics.tms", "s", "/tms", {title: "Publish sensors values."}]
+- ["topics.mcsu", "s", "/mcsu", {title: "Listen to control commands."}]
 - ["topics.publish_interval_ms.ldr", "d", 2500, {title: "Interval between LDR value publishing."}]
-- ["topics.publish_interval_ms.temperature", "d", 3000, {title: "Interval between temperature value publishing."}]
+- ["topics.publish_interval_ms.water_temperature", "d", 5000, {title: "Interval between water temperature value publishing."}]
+- ["topics.publish_interval_ms.temperature", "d", 5000, {title: "Interval between temperature value publishing."}]
+- ["topics.publish_interval_ms.humidity", "d", 5000, {title: "Interval between humidity value publishing."}]
 - ["topics.publish_interval_ms.rpm", "d", 1000, {title: "Interval between fan rpm value publishing."}]
 
 libs:
@@ -83,6 +86,6 @@ libs:
   - origin: https://github.com/mongoose-os-libs/http-server
   - origin: https://github.com/mongoose-os-libs/aws
   - origin: https://github.com/mongoose-os-libs/pwm
- 
+  - origin: https://github.com/mongoose-os-libs/dht
 # Used by the mos tool to catch mos binaries incompatible with this file format
 manifest_version: 2017-09-29
