@@ -51,7 +51,7 @@ config_schema:
 - ["wifi.sta1.enable", true]
 - ["wifi.sta1.ssid", ""]
 - ["wifi.sta1.pass", ""]
-- ["wifi.sta.enable", true]
+- ["wifi.sta.enable", false]
 - ["wifi.sta.ssid", ""]
 - ["wifi.sta.pass", ""]
 - ["mqtt.enable", true]
@@ -68,12 +68,13 @@ config_schema:
 - ["topics.new_conn", "s", "/new_conn", {title: "Announcing successful connection."}]
 - ["topics.tms", "s", "/tms", {title: "Publish sensors values."}]
 - ["topics.mcsu", "s", "/mcsu", {title: "Listen to control commands."}]
-- ["topics.publish_interval_ms.ldr", "d", 2500, {title: "Interval between LDR value publishing."}]
-- ["topics.publish_interval_ms.water_temperature", "d", 5000, {title: "Interval between water temperature value publishing."}]
-- ["topics.publish_interval_ms.temperature", "d", 5000, {title: "Interval between temperature value publishing."}]
-- ["topics.publish_interval_ms.humidity", "d", 5000, {title: "Interval between humidity value publishing."}]
-- ["topics.publish_interval_ms.rpm", "d", 1000, {title: "Interval between fan rpm value publishing."}]
+- ["topics.cbs", "s", "/cbs", {title: "Updates backup behaviour."}]
+- ["topics.publish_interval_ms.payload", "d", 180000, {title: "Interval between payload publishing."}]
 
+# Backup timers
+- ["led_backup_timer_ms", "d", 2000, {title: "Interval between fan rpm value publishing."}]
+- ["pump_backup_timer_ms", "d", 5000, {title: "Interval between fan rpm value publishing."}]
+- ["fan_backup_timer_ms", "d", 3000, {title: "Interval between fan rpm value publishing."}]
 libs:
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
